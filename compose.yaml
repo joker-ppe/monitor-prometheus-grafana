@@ -3,7 +3,7 @@ services:
     image: prom/prometheus
     container_name: prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
+      - "--config.file=/etc/prometheus/prometheus.yml"
     ports:
       - 9090:9090
     restart: unless-stopped
@@ -16,10 +16,72 @@ services:
     ports:
       - 3000:3000
     restart: unless-stopped
-    environment:
-      - GF_SECURITY_ADMIN_USER=joker
-      - GF_SECURITY_ADMIN_PASSWORD=Joker@123
+    depends_on:
+      - prometheus
+    env_file:
+      - .env
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
+
+  # source https://github.com/nginxinc/nginx-prometheus-exporter
+  nginx-prometheus-exporter:
+    image: nginx/nginx-prometheus-exporter
+    container_name: prometheus-nginx-exporter
+    restart: always
+    env_file: .env
+    command:
+      - -nginx.scrape-uri=https://nginx/stub_status
+    expose:
+      - 9113
+    networks:
+      - localhost
+    depends_on:
+      - prometheus
+
+  # source https://github.com/prometheus/node_exporter
+  # https://github.com/vegasbrianc/prometheus/
+  prometheus-node-exporter:
+    image: prom/node-exporter
+    container_name: prometheus-node-exporter
+    restart: always
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.sysfs=/host/sys"
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    networks:
+      - localhost
+    privileged: true
+    depends_on:
+      - prometheus
+    expose:
+      - 9100
+
+  # source: https://github.com/google/cadvisor
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor
+    container_name: cadvisor
+    restart: always
+    depends_on:
+      - prometheus
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    expose:
+      - 8080
+    networks:
+      - localhost
 volumes:
   prom_data:
+
+networks:
+  localhost:
+    name: localhost
+    external: false
