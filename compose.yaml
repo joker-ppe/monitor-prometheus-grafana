@@ -10,6 +10,9 @@ services:
     volumes:
       - ./prometheus:/etc/prometheus
       - prom_data:/prometheus
+    networks:
+      - localhost
+
   grafana:
     image: grafana/grafana
     container_name: grafana
@@ -22,6 +25,8 @@ services:
       - .env
     volumes:
       - ./grafana:/etc/grafana/provisioning/datasources
+    networks:
+      - localhost
 
   # source https://github.com/nginxinc/nginx-prometheus-exporter
   nginx-prometheus-exporter:
