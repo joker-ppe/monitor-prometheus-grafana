@@ -30,7 +30,7 @@ services:
 
   # source https://github.com/nginxinc/nginx-prometheus-exporter
   nginx-prometheus-exporter:
-    image: nginxinc/nginx-prometheus-exporter
+    image: nginx/nginx-prometheus-exporter
     container_name: prometheus-nginx-exporter
     restart: always
     env_file: .env
